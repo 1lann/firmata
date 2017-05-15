@@ -12,7 +12,8 @@ import (
 	"gobot.io/x/gobot/drivers/i2c"
 )
 
-type firmataBoard interface {
+// FirmataBoard is the interface for the underlying Firmata protocol driver.
+type FirmataBoard interface {
 	Connect(io.ReadWriteCloser) error
 	Disconnect() error
 	Pins() []client.Pin
@@ -234,4 +235,9 @@ func (f *Adaptor) GetConnection(address int, bus int) (connection i2c.Connection
 // GetDefaultBus returns the default i2c bus for this platform
 func (f *Adaptor) GetDefaultBus() int {
 	return 0
+}
+
+// Board returns the underlying Firmata protocol driver.
+func (f *Adaptor) Board() FirmataBoard {
+	return f.board
 }
