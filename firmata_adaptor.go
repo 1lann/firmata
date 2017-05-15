@@ -33,7 +33,7 @@ type FirmataBoard interface {
 type Adaptor struct {
 	name       string
 	port       string
-	board      firmataBoard
+	board      FirmataBoard
 	conn       io.ReadWriteCloser
 	PortOpener func(port string) (io.ReadWriteCloser, error)
 	gobot.Eventer
