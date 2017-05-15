@@ -1,6 +1,7 @@
 package firmata
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -240,4 +241,58 @@ func (f *Adaptor) GetDefaultBus() int {
 // Board returns the underlying Firmata protocol driver.
 func (f *Adaptor) Board() FirmataBoard {
 	return f.board
+}
+
+// PulseIn will record the time a pin stays at a certain value for.
+func (f *Adaptor) PulseIn(pin string, value int,
+	timeout time.Duration) (time.Duration, error) {
+	p, err := strconv.Atoi(pin)
+	if err != nil {
+		return 0, err
+	}
+
+	result := make(chan time.Duration)
+
+	f.board.Once("DigitalRead"+pin, func(s interface{}) {
+		if s.(int) == value {
+			start := time.Now()
+			inverseValue := 1
+			if value == 1 {
+				inverseValue = 0
+			}
+
+			f.board.Once("DigitalRead"+pin, func(s interface{}) {
+				if s.(int) == inverseValue {
+					result <- time.Since(start)
+				} else {
+					result <- 0
+				}
+			})
+
+		} else {
+			result <- 0
+		}
+	})
+
+	if f.board.Pins()[p].Mode != client.Input {
+		if err = f.board.SetPinMode(p, client.Input); err != nil {
+			return 0, err
+		}
+		if err = f.board.ReportDigital(p, 1); err != nil {
+			return 0, err
+		}
+	}
+
+	select {
+	case resultValue := <-result:
+		if resultValue == 0 {
+			return 0, errors.New("firmata: pulse in: unexpected read value")
+		}
+		return resultValue, nil
+	case <-time.After(timeout):
+		go func() {
+			<-result
+		}()
+		return 0, errors.New("firmata: pulse in: timeout")
+	}
 }
