@@ -39,4 +39,4 @@ Example:
 For further information refer to firmata readme:
 https://github.com/hybridgroup/gobot/blob/master/platforms/firmata/README.md
 */
-package firmata // import "gobot.io/x/gobot/platforms/firmata"
+package firmata
